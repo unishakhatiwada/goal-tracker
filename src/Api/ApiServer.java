@@ -1,6 +1,7 @@
 package Api;
 
 import Handlers.LoginHandler;
+import Middleware.TokenValidationFilter;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -13,10 +14,11 @@ public class ApiServer {
             HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
             // Define a context (endpoint) /register
             server.createContext("/register", new RegisterHandler());
-            // Define a context (endpoint) /login
-            server.createContext("/login", new LoginHandler());
-            // Set default executor
-            server.setExecutor(null);
+
+            // Create context for the login handler and add token validation filter
+            var loginContext = server.createContext("/login", new LoginHandler());
+            loginContext.getFilters().add(new TokenValidationFilter());
+            server.setExecutor(null); // creates a default executor
             // Start the server
             server.start();
             System.out.println("Server started on port " + server.getAddress().getPort());
