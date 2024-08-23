@@ -39,10 +39,10 @@ public class TokenValidationFilter extends Filter {
                 ResultSet rs = stmt.executeQuery();
 
                 if (rs.next()) {
-                    // Token is valid, continue with the request
+                    System.out.println("Token is valid.");
                     chain.doFilter(exchange);
                 } else {
-                    // Invalid token
+                    System.out.println("Invalid token.");
                     sendError(exchange, "Invalid token.");
                 }
             }
