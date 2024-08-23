@@ -1,6 +1,7 @@
 package Api;
 
 import Handlers.LoginHandler;
+import Handlers.LogoutHandler;
 import Middleware.TokenValidationFilter;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
@@ -18,6 +19,9 @@ public class ApiServer {
             // Create context for the login handler and add token validation filter
             var loginContext = server.createContext("/login", new LoginHandler());
             loginContext.getFilters().add(new TokenValidationFilter());
+
+            // Register the LogoutHandler for the /logout endpoint
+            server.createContext("/logout", new LogoutHandler());
             server.setExecutor(null); // creates a default executor
             // Start the server
             server.start();
