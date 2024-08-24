@@ -19,7 +19,7 @@ public class UpdateTaskHandler implements HttpHandler {
 
             try (Connection conn = DatabaseConnection.getConnection()) {
                 String query = "UPDATE tasks SET title = ?, description = ?, status = ?, due_date = ? WHERE id = ?";
-                try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                 PreparedStatement stmt = conn.prepareStatement(query);
                     stmt.setString(1, task.getTitle());
                     stmt.setString(2, task.getDescription());
                     stmt.setString(3, task.getStatus());
@@ -41,7 +41,7 @@ public class UpdateTaskHandler implements HttpHandler {
                             os.write(response.getBytes());
                         }
                     }
-                }
+
             } catch (SQLException e) {
                 e.printStackTrace();
                 String response = "{\"message\": \"Server error: " + e.getMessage() + "\"}";
