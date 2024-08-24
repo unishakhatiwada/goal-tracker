@@ -1,6 +1,7 @@
 package Handlers.Goals;
 
 import Handlers.DatabaseConnection;
+import Utils.URIHelper;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
@@ -20,11 +21,9 @@ public class CreateGoalHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         if ("POST".equals(exchange.getRequestMethod())) {
-            String requestBody = new BufferedReader(new InputStreamReader(exchange.getRequestBody()))
-                    .lines().collect(Collectors.joining("\n"));
-
+            System.out.println("create");
             try {
-                GoalModel goal = new Gson().fromJson(requestBody, GoalModel.class);
+                GoalModel goal = URIHelper.getRequestBody(exchange, GoalModel.class);
 
                 try (Connection conn = DatabaseConnection.getConnection()) {
                     String query = "INSERT INTO goals (title, purpose, deadline) VALUES (?, ?, ?)";

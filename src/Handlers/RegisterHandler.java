@@ -1,5 +1,6 @@
 package Handlers;
 
+import Utils.URIHelper;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpExchange;
 import java.io.BufferedReader;
@@ -17,17 +18,9 @@ public class RegisterHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         if ("POST".equals(exchange.getRequestMethod())) {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), "utf-8"));
-            StringBuilder jsonBuilder = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                jsonBuilder.append(line);
-            }
-            reader.close();
-            String json = jsonBuilder.toString();
 
             // Parse JSON to User object
-            User user = gson.fromJson(json, User.class);
+            User user = URIHelper.getRequestBody(exchange, User.class);
 
             // Register user
             try (Connection conn = DatabaseConnection.getConnection()) {

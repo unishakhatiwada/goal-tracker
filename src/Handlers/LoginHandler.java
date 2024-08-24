@@ -1,5 +1,6 @@
 package Handlers;
 
+import Utils.URIHelper;
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -19,17 +20,9 @@ public class LoginHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         if ("POST".equals(exchange.getRequestMethod())) {
-            var reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), "utf-8"));
-            StringBuilder jsonBuilder = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                jsonBuilder.append(line);
-            }
-            reader.close();
-            String json = jsonBuilder.toString();
 
             // Parse JSON to Login object
-            Login login = gson.fromJson(json, Login.class);
+            Login login= URIHelper.getRequestBody(exchange, Login.class);
 
             // Validate user
             boolean isValidUser = false;
