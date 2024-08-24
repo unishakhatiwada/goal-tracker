@@ -19,12 +19,6 @@ public class UpdateGoalHandler implements HttpHandler {
     public void handle(HttpExchange exchange) throws IOException {
         if ("PUT".equals(exchange.getRequestMethod())) {
             int goalId = URIHelper.getId(exchange);
-//            String requestBody = new BufferedReader(new InputStreamReader(exchange.getRequestBody()))
-//                    .lines().collect(Collectors.joining("\n"));
-//
-//            System.out.println(requestBody);
-//            GoalModel goal = new Gson().fromJson(requestBody, GoalModel.class);
-
              GoalModel goal=URIHelper.getRequestBody(exchange, GoalModel.class);
             try (Connection conn = DatabaseConnection.getConnection()) {
                 String query = "UPDATE goals SET title = ?, purpose = ?, completion = ?, deadline = ? WHERE id = ?";
