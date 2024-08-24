@@ -7,6 +7,7 @@ import Handlers.Goals.UpdateGoalHandler;
 import Handlers.LoginHandler;
 import Handlers.LogoutHandler;
 import Middleware.TokenValidationFilter;
+import Utils.Routes;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -29,16 +30,16 @@ public class ApiServer {
             logoutContext.getFilters().add(new TokenValidationFilter());
 
             // Adding context for goals with token validation
-            var createGoalContext = server.createContext("/goals", new CreateGoalHandler());  // POST /goals
+            var createGoalContext = server.createContext(Routes.CREATE_GOAL, new CreateGoalHandler());  // POST /goals
             createGoalContext.getFilters().add(new TokenValidationFilter());
 
-            var getGoalContext = server.createContext("/goals/", new GetGoalHandler()); // GET /goals?id={id}
+            var getGoalContext = server.createContext(Routes.LIST_GOAL, new GetGoalHandler()); // GET /goals?id={id}
             getGoalContext.getFilters().add(new TokenValidationFilter());
 
-            var updateGoalContext = server.createContext("/goals/", new UpdateGoalHandler()); // PUT /goals?id={id}
+            var updateGoalContext = server.createContext(Routes.UPDATE_GOAL, new UpdateGoalHandler()); // PUT /goals?id={id}
             updateGoalContext.getFilters().add(new TokenValidationFilter());
 
-            var deleteGoalContext = server.createContext("/goals/", new DeleteGoalHandler()); // DELETE /goals?id={id}
+            var deleteGoalContext = server.createContext(Routes.DELETE_GOAL, new DeleteGoalHandler()); // DELETE /goals?id={id}
             deleteGoalContext.getFilters().add(new TokenValidationFilter());
 
             server.setExecutor(null); // creates a default executor

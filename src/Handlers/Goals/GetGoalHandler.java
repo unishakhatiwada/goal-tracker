@@ -1,6 +1,7 @@
 package Handlers.Goals;
 
 import Handlers.DatabaseConnection;
+import Utils.URIHelper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.sun.net.httpserver.HttpExchange;
@@ -18,13 +19,12 @@ public class GetGoalHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         if ("GET".equals(exchange.getRequestMethod())) {
-            String idParam = exchange.getRequestURI().getQuery().split("=")[1];
-            int id = Integer.parseInt(idParam);
+            int goalId = URIHelper.getId(exchange);
 
             try (Connection conn = DatabaseConnection.getConnection()) {
                 String query = "SELECT * FROM goals WHERE id = ?";
                 try (PreparedStatement stmt = conn.prepareStatement(query)) {
-                    stmt.setInt(1, id);
+                    stmt.setInt(1, goalId);
                     ResultSet rs = stmt.executeQuery();
 
                     if (rs.next()) {
