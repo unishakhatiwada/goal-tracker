@@ -6,6 +6,10 @@ import Handlers.Goals.GetGoalHandler;
 import Handlers.Goals.UpdateGoalHandler;
 import Handlers.LoginHandler;
 import Handlers.LogoutHandler;
+import Handlers.Tasks.CreateTaskHandler;
+import Handlers.Tasks.DeleteTaskHandler;
+import Handlers.Tasks.GetTaskHandler;
+import Handlers.Tasks.UpdateTaskHandler;
 import Middleware.TokenValidationFilter;
 import Utils.Routes;
 import com.sun.net.httpserver.HttpServer;
@@ -30,17 +34,30 @@ public class ApiServer {
             logoutContext.getFilters().add(new TokenValidationFilter());
 
             // Adding context for goals with token validation
-            var createGoalContext = server.createContext(Routes.CREATE_GOAL, new CreateGoalHandler());  // POST /goals
+            var createGoalContext = server.createContext(Routes.CREATE_GOAL, new CreateGoalHandler());  // POST /goals/create/
             createGoalContext.getFilters().add(new TokenValidationFilter());
 
-            var getGoalContext = server.createContext(Routes.LIST_GOAL, new GetGoalHandler()); // GET /goals?id={id}
+            var getGoalContext = server.createContext(Routes.LIST_GOAL, new GetGoalHandler()); // GET /goals/list/?id={id}
             getGoalContext.getFilters().add(new TokenValidationFilter());
 
-            var updateGoalContext = server.createContext(Routes.UPDATE_GOAL, new UpdateGoalHandler()); // PUT /goals?id={id}
+            var updateGoalContext = server.createContext(Routes.UPDATE_GOAL, new UpdateGoalHandler()); // PUT /goals/update/?id={id}
             updateGoalContext.getFilters().add(new TokenValidationFilter());
 
-            var deleteGoalContext = server.createContext(Routes.DELETE_GOAL, new DeleteGoalHandler()); // DELETE /goals?id={id}
+            var deleteGoalContext = server.createContext(Routes.DELETE_GOAL, new DeleteGoalHandler()); // DELETE /goals/delete/?id={id}
             deleteGoalContext.getFilters().add(new TokenValidationFilter());
+
+            // Adding context for tasks with token validation
+            var createTaskContext = server.createContext(Routes.CREATE_TASK, new CreateTaskHandler());  // POST /tasks/create/
+            createTaskContext.getFilters().add(new TokenValidationFilter());
+
+            var getTaskContext = server.createContext(Routes.LIST_TASK, new GetTaskHandler());  // POST /tasks/list/?id={id}
+            createTaskContext.getFilters().add(new TokenValidationFilter());
+
+            var updateTaskContext = server.createContext(Routes.UPDATE_TASK, new UpdateTaskHandler());  // POST /tasks/update/?id={id}
+            createTaskContext.getFilters().add(new TokenValidationFilter());
+
+            var deleteTaskContext = server.createContext(Routes.DELETE_TASK, new DeleteTaskHandler());  // POST /tasks/delete/?id={id}
+            createTaskContext.getFilters().add(new TokenValidationFilter());
 
             server.setExecutor(null); // creates a default executor
 
