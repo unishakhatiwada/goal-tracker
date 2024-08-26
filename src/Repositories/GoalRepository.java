@@ -8,6 +8,9 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
+
 
 public class GoalRepository {
 
@@ -23,6 +26,7 @@ public class GoalRepository {
     private final String updateGoalQuery = "UPDATE goals SET title = ?, purpose = ?, deadline = ?, status = ? WHERE id = ?";
     private final String deleteGoalQuery = "DELETE FROM goals WHERE id = ?";
     private final String deleteTasksByGoalIdQuery = "DELETE FROM tasks WHERE goal_id = ?";
+
 
     public List<Goal> getAllGoals(int userId) throws SQLException {
         List<Goal> goals = new ArrayList<>();
@@ -156,5 +160,89 @@ public class GoalRepository {
             task.setGoalId(goal.getId()); // Set the goalId for the task
             goal.getTasks().add(task);
         }
+    }
+
+    public boolean goalExists(int goalId) throws SQLException {
+        String query = "SELECT COUNT(*) FROM goals WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, goalId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        }
+        return false;
+    }
+
+    public Map<String, Integer> getGoalCounts(int userId) throws SQLException {
+        String query = "SELECT status, COUNT(*) as count FROM goals WHERE user_id = ? GROUP BY status";
+        Map<String, Integer> counts = new HashMap<>();
+        counts.put("completed", 0);
+        counts.put("pending", 0);
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    String status = rs.getString("status");
+                    int count = rs.getInt("count");
+                    counts.put(status, count);
+                }
+            }
+        }
+        return counts;
+    }
+
+    public List<Goal> getPendingGoals(int userId, int limit) throws SQLException {
+        String query = "SELECT * FROM goals WHERE user_id = ? AND status = 'pending' ORDER BY deadline ASC LIMIT ?";
+        List<Goal> goals = new ArrayList<>();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, userId);
+            stmt.setInt(2, limit);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Goal goal = new Goal();
+                    goal.setId(rs.getInt("id"));
+                    goal.setTitle(rs.getString("title"));
+                    goal.setPurpose(rs.getString("purpose"));
+                    goal.setDeadline(rs.getString("deadline"));
+                    goal.setStatus(rs.getString("status"));
+                    goal.setUserId(rs.getInt("user_id"));
+                    goals.add(goal);
+                }
+            }
+        }
+        return goals;
+    }
+
+    public boolean toggleGoalStatus(int goalId, int userId) throws SQLException {
+        String query = "UPDATE goals SET status = CASE WHEN status = 'completed' THEN 'pending' ELSE 'completed' END WHERE id = ? AND user_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, goalId);
+            stmt.setInt(2, userId);
+            int affectedRows = stmt.executeUpdate();
+            return affectedRows > 0;
+        }
+    }
+
+    public String getGoalStatus(int goalId, int userId) throws SQLException {
+        String query = "SELECT status FROM goals WHERE id = ? AND user_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, goalId);
+            stmt.setInt(2, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("status");
+                }
+            }
+        }
+        return null;
     }
 }
