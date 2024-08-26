@@ -1,57 +1,52 @@
 package Handlers.Tasks;
 
-import Handlers.DatabaseConnection;
+import Utils.ResponseHelper;
 import Utils.URIHelper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import Repositories.TaskRepository;
+import Model.Task;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public class UpdateTaskHandler implements HttpHandler {
+
+    private final TaskRepository taskRepository = new TaskRepository();
+
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         if ("PUT".equals(exchange.getRequestMethod())) {
             int taskId = URIHelper.getId(exchange);
-            TaskModel task = URIHelper.getRequestBody(exchange, TaskModel.class);
+            Task task = URIHelper.getRequestBody(exchange, Task.class);
 
-            try (Connection conn = DatabaseConnection.getConnection()) {
-                String query = "UPDATE tasks SET title = ?, description = ?, status = ?, due_date = ? WHERE id = ?";
-                 PreparedStatement stmt = conn.prepareStatement(query);
-                    stmt.setString(1, task.getTitle());
-                    stmt.setString(2, task.getDescription());
-                    stmt.setString(3, task.getStatus());
-                    stmt.setString(4, task.getDueDate());
-                    stmt.setInt(5, taskId);
 
-                    int rowsAffected = stmt.executeUpdate();
+            try {
+                if (!taskRepository.taskExists(taskId)) {
+                    ResponseHelper.sendErrorResponse(exchange, 404, "Task not found");
+                    return;
+                }
+                
+                task.setId(taskId);
 
-                    if (rowsAffected > 0) {
-                        String response = "{\"message\": \"Task updated successfully\"}";
-                        exchange.sendResponseHeaders(200, response.length());
-                        try (var os = exchange.getResponseBody()) {
-                            os.write(response.getBytes());
-                        }
-                    } else {
-                        String response = "{\"message\": \"Task not found\"}";
-                        exchange.sendResponseHeaders(404, response.length());
-                        try (var os = exchange.getResponseBody()) {
-                            os.write(response.getBytes());
-                        }
-                    }
-
+                if (taskRepository.updateTask(task)) {
+                    ResponseHelper.sendSuccessResponse(exchange, "Task updated successfully",
+                            Task.getTaskDetail(taskId));
+                } else {
+                    ResponseHelper.sendErrorResponse(
+                            exchange,
+                            404,
+                            "Task not found");
+                }
             } catch (SQLException e) {
                 e.printStackTrace();
-                String response = "{\"message\": \"Server error: " + e.getMessage() + "\"}";
-                exchange.sendResponseHeaders(500, response.length());
-                try (var os = exchange.getResponseBody()) {
-                    os.write(response.getBytes());
-                }
+                ResponseHelper.sendErrorResponse(
+                        exchange,
+                        500,
+                        "Server error: " + e.getMessage());
             }
         } else {
-            exchange.sendResponseHeaders(405, -1); // Method Not Allowed
+            exchange.sendResponseHeaders(405, -1);
         }
     }
 }

@@ -3,19 +3,18 @@ package Handlers.Tasks;
 import Model.Task;
 import Repositories.TaskRepository;
 import Utils.ResponseHelper;
-import Utils.URIHelper;
-
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
 
-public class GetTaskHandler implements HttpHandler {
+public class ListTaskHandler implements HttpHandler {
 
     private final TaskRepository taskRepository;
 
-    public GetTaskHandler() {
+    public ListTaskHandler() {
         this.taskRepository = new TaskRepository();
     }
 
@@ -23,17 +22,10 @@ public class GetTaskHandler implements HttpHandler {
     public void handle(HttpExchange exchange) throws IOException {
         if ("GET".equals(exchange.getRequestMethod())) {
             try {
-                int taskId = URIHelper.getId(exchange);
+                Integer userId = (Integer) exchange.getAttribute("userId");
+                List<Task> tasks = taskRepository.getAllTasks(userId);
 
-                if (!taskRepository.taskExists(taskId)) {
-                    ResponseHelper.sendErrorResponse(exchange, 404, "Task not found");
-                    return;
-                }
-
-                Task task = taskRepository.getTaskDetail(taskId);
-                ResponseHelper.sendSuccessResponse(exchange, "Task details retrieved successfully", task);
-            } catch (NumberFormatException e) {
-                ResponseHelper.sendErrorResponse(exchange, 400, "Invalid task ID");
+                ResponseHelper.sendSuccessResponse(exchange, "Tasks retrieved successfully", tasks);
             } catch (SQLException e) {
                 ResponseHelper.sendErrorResponse(exchange, 500, "Database error: " + e.getMessage());
             } catch (Exception e) {
