@@ -1,5 +1,8 @@
 package Model;
 
+import Handlers.DBService.DatabaseConnection;
+import java.sql.*;
+
 public class Task {
 
     private int id;
@@ -17,7 +20,6 @@ public class Task {
         this.status = status;
     }
 
-    // Getters and Setters
     public int getId() {
         return id;
     }
@@ -49,5 +51,25 @@ public class Task {
     public void setStatus(String status) {
         this.status = status;
     }
-    
+
+    public static Task getTaskDetail(int taskId) throws SQLException {
+        Task task = null;
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String query = "SELECT * FROM tasks WHERE id = ?";
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setInt(1, taskId);
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next()) {
+                    task = new Task();
+                    task.setId(rs.getInt("id"));
+                    task.setGoalId(rs.getInt("goal_id"));
+                    task.setTitle(rs.getString("title"));
+                    task.setStatus(rs.getString("status"));
+                }
+            }
+        }
+
+        return task;
+    }
+
 }
