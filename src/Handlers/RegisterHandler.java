@@ -1,100 +1,74 @@
 package Handlers;
 
+import Utils.ResponseHelper;
+import Model.User;
 import Utils.URIHelper;
 import com.sun.net.httpserver.HttpHandler;
+import Handlers.DBService.DatabaseConnection;
 import com.sun.net.httpserver.HttpExchange;
-import java.io.BufferedReader;
+
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import com.google.gson.Gson;
 
 public class RegisterHandler implements HttpHandler {
-    private static final Gson gson = new Gson();
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         if ("POST".equals(exchange.getRequestMethod())) {
+            try {
+                User user = URIHelper.getRequestBody(exchange, User.class);
 
-            // Parse JSON to User object
-            User user = URIHelper.getRequestBody(exchange, User.class);
+                if (!isValidRegistration(user, exchange)) {
+                    return;
+                }
 
-            // Register user
-            try (Connection conn = DatabaseConnection.getConnection()) {
-                // Insert user into the database
-                String userQuery = "INSERT INTO users (email, password, confirm_password) VALUES (?, ?, ?)";
-                try (PreparedStatement userStmt = conn.prepareStatement(userQuery)) {
-                    userStmt.setString(1, user.getEmail());
-                    userStmt.setString(2, user.getPassword());
-                    userStmt.setString(3, user.getConfirmPassword());
-                    int affectedRows = userStmt.executeUpdate();
+                user.hashPassword();
 
-                    if (affectedRows > 0) {
-                        // Send success response
-                        String response = "{\"message\": \"User registered successfully!\"}";
-                        exchange.sendResponseHeaders(200, response.length());
-                        OutputStream os = exchange.getResponseBody();
-                        os.write(response.getBytes());
-                        os.close();
+                try (Connection conn = DatabaseConnection.getConnection()) {
+                    String userQuery = "INSERT INTO users (email, password, username) VALUES (?, ?, ?)";
+                    try (PreparedStatement userStmt = conn.prepareStatement(userQuery)) {
+                        userStmt.setString(1, user.getEmail());
+                        userStmt.setString(2, user.getPassword());
+                        userStmt.setString(3, user.getUsername());
+                        int affectedRows = userStmt.executeUpdate();
+
+                        if (affectedRows > 0) {
+                            ResponseHelper.sendSuccessResponse(exchange, "User registered successfully!", null);
+                        } else {
+                            ResponseHelper.sendErrorResponse(exchange, 500, "Registration failed");
+                        }
+                    }
+                } catch (SQLException e) {
+                    if (e.getErrorCode() == 1062) {
+                        ResponseHelper.sendErrorResponse(exchange, 409, "This email is already registered.");
                     } else {
-                        // Handle registration failure
-                        String response = "Registration failed";
-                        exchange.sendResponseHeaders(500, response.length());
-                        OutputStream os = exchange.getResponseBody();
-                        os.write(response.getBytes());
-                        os.close();
+                        ResponseHelper.sendErrorResponse(exchange, 500, "Database error: " + e.getMessage());
                     }
                 }
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
-                String errorResponse = "Database error: " + e.getMessage();
-                exchange.sendResponseHeaders(500, errorResponse.length());
-                OutputStream os = exchange.getResponseBody();
-                os.write(errorResponse.getBytes());
-                os.close();
+                ResponseHelper.sendErrorResponse(exchange, 500, "Server error: " + e.getMessage());
             }
         } else {
-            // Method not allowed
-            String response = "Method not allowed";
-            exchange.sendResponseHeaders(405, response.length());
-            OutputStream os = exchange.getResponseBody();
-            os.write(response.getBytes());
-            os.close();
+            ResponseHelper.sendErrorResponse(exchange, 405, "Method not allowed");
         }
     }
 
-    // User class for JSON parsing
-    static class User {
-        private String email;
-        private String password;
-        private String confirm_password;
-
-        // Getters and setters
-        public String getEmail() {
-            return email;
+    private boolean isValidRegistration(User user, HttpExchange exchange) throws IOException {
+        if (user.getEmail() == null || user.getEmail().isEmpty()) {
+            ResponseHelper.sendErrorResponse(exchange, 400, "Email is required.");
+            return false;
         }
-
-        public void setEmail(String email) {
-            this.email = email;
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            ResponseHelper.sendErrorResponse(exchange, 400, "Password is required.");
+            return false;
         }
-
-        public String getPassword() {
-            return password;
+        if (user.getUsername() == null || user.getUsername().isEmpty()) {
+            ResponseHelper.sendErrorResponse(exchange, 400, "Username is required.");
+            return false;
         }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
-
-        public String getConfirmPassword() {
-            return confirm_password;
-        }
-
-        public void setConfirmPassword(String confirm_password) {
-            this.confirm_password = confirm_password;
-        }
+        return true;
     }
 }
