@@ -1,61 +1,49 @@
 package Handlers.Goals;
 
-import Handlers.DatabaseConnection;
+import Repositories.GoalRepository;
 import Utils.URIHelper;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import Utils.ResponseHelper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
+import Model.Goal;
+
 import java.io.IOException;
-import java.io.OutputStream;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.time.LocalDateTime;
+import java.util.Optional;
 
 public class GetGoalHandler implements HttpHandler {
+
+    private final GoalRepository goalRepository;
+
+    public GetGoalHandler() {
+        this.goalRepository = new GoalRepository();
+    }
+
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         if ("GET".equals(exchange.getRequestMethod())) {
             int goalId = URIHelper.getId(exchange);
 
-            try (Connection conn = DatabaseConnection.getConnection()) {
-                String query = "SELECT * FROM goals WHERE id = ?";
-                try (PreparedStatement stmt = conn.prepareStatement(query)) {
-                    stmt.setInt(1, goalId);
-                    ResultSet rs = stmt.executeQuery();
+            try {
+                Optional<Goal> goalOptional = goalRepository.getGoalById(goalId);
 
-                    if (rs.next()) {
-                        GoalModel goal = new GoalModel();
-                        goal.setId(rs.getInt("id"));
-                        goal.setTitle(rs.getString("title"));
-                        goal.setPurpose(rs.getString("purpose"));
-                        goal.setCompletion(rs.getBoolean("completion"));
-                        goal.setDeadline(String.valueOf(rs.getObject("deadline", LocalDateTime.class)));
-                        goal.setCreatedAt(String.valueOf(rs.getObject("created_at", LocalDateTime.class)));
-                        goal.setUpdatedAt(String.valueOf(rs.getObject("updated_at", LocalDateTime.class)));
-
-                        Gson gson = new GsonBuilder().create();
-                        String response = gson.toJson(goal);
-
-                        exchange.sendResponseHeaders(200, response.length());
-                        OutputStream os = exchange.getResponseBody();
-                        os.write(response.getBytes());
-                        os.close();
-                    } else {
-                        String response = "{\"message\": \"Goal not found\"}";
-                        exchange.sendResponseHeaders(404, response.length());
-                        exchange.getResponseBody().write(response.getBytes());
-                    }
+                if (goalOptional.isPresent()) {
+                    Goal goal = goalOptional.get();
+                    ResponseHelper.sendSuccessResponse(exchange, "Goal retrieved successfully", goal);
+                } else {
+                    String response = "{\"message\": \"Goal not found\"}";
+                    exchange.sendResponseHeaders(404, response.length());
+                    exchange.getResponseBody().write(response.getBytes());
                 }
-            } catch (SQLException e) {
+
+            } catch (Exception e) {
                 e.printStackTrace();
                 String response = "{\"message\": \"Server error: " + e.getMessage() + "\"}";
                 exchange.sendResponseHeaders(500, response.length());
                 exchange.getResponseBody().write(response.getBytes());
             }
+        } else {
+            exchange.sendResponseHeaders(405, -1); // Method not allowed
         }
     }
 }

@@ -2,35 +2,31 @@ package Handlers.Goals;
 
 import Model.Goal;
 import Repositories.GoalRepository;
-import Utils.URIHelper;
 import Utils.ResponseHelper;
-import com.google.gson.JsonSyntaxException;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
 
-public class CreateGoalHandler implements HttpHandler {
+public class ListGoalHandler implements HttpHandler {
 
     private final GoalRepository goalRepository;
 
-    public CreateGoalHandler() {
-        this.goalRepository = new GoalRepository(); 
+    public ListGoalHandler() {
+        this.goalRepository = new GoalRepository();
     }
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        if ("POST".equals(exchange.getRequestMethod())) {
+        if ("GET".equals(exchange.getRequestMethod())) {
             try {
-                Goal goal = URIHelper.getRequestBody(exchange, Goal.class);
+
                 Integer userId = (Integer) exchange.getAttribute("userId");
+                List<Goal> goals = goalRepository.getAllGoals(userId);
 
-                int createdGoal = goalRepository.createGoal(goal, userId);
-
-                ResponseHelper.sendSuccessResponse(exchange, "Goal created successfully", Goal.getGoalDetail(createdGoal));
-            } catch (JsonSyntaxException e) {
-                ResponseHelper.sendErrorResponse(exchange, 400, "Invalid JSON format.");
+                ResponseHelper.sendSuccessResponse(exchange, "Goals retrieved successfully", goals);
             } catch (SQLException e) {
                 ResponseHelper.sendErrorResponse(exchange, 500, "Database error: " + e.getMessage());
             } catch (Exception e) {
@@ -40,4 +36,5 @@ public class CreateGoalHandler implements HttpHandler {
             exchange.sendResponseHeaders(405, -1);
         }
     }
+    
 }
